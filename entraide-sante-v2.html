@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Entraide Santé — Partagez, aidez, guérissez ensemble</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --color-bg: #F4F7F3;
+    --color-surface: #FFFFFF;
+    --color-surface-soft: #EEF3EF;
+    --color-primary: #204E4C;
+    --color-primary-dark: #123230;
+    --color-primary-light: #3A716E;
+    --color-secondary: #6FA895;
+    --color-accent: #D98C4A;
+    --color-accent-dark: #B96F30;
+    --color-text: #1F2C29;
+    --color-text-muted: #5B6E6A;
+    --color-border: #DCE4E0;
+    --color-success: #3F8863;
+    --color-danger: #B5573F;
+    --shadow-soft: 0 2px 10px rgba(18,50,48,0.06);
+    --shadow-med: 0 8px 28px rgba(18,50,48,0.12);
+    --radius-md: 14px;
+    --radius-lg: 22px;
+    --font-display: 'Fraunces', serif;
+    --font-body: 'Work Sans', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font-body);
+    background:var(--color-bg);
+    color:var(--color-text);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;font-size:16px;}
+  h1,h2,h3{font-family:var(--font-display);margin:0;color:var(--color-primary-dark);}
+  .hidden{display:none !important;}
+  .container{max-width:760px;margin:0 auto;padding:0 18px;}
+
+  .pulse-line{width:100%;max-width:220px;height:34px;display:block;margin:0 auto;}
+  .pulse-line path{
+    fill:none;stroke:var(--color-accent);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;
+    stroke-dasharray:300;stroke-dashoffset:300;
+    animation:draw-pulse 1.4s ease-out forwards;
+  }
+  @keyframes draw-pulse{to{stroke-dashoffset:0;}}
+
+  .config-banner{
+    background:#FBECE7;border-bottom:1px solid #F0D2C4;color:var(--color-accent-dark);
+    font-size:13px;padding:10px 18px;text-align:center;
+  }
+  .config-banner code{background:#fff;padding:1px 6px;border-radius:5px;font-family:var(--font-mono);font-size:12px;}
+
+  .topbar{background:var(--color-primary);color:#fff;padding:14px 0;}
+  .topbar-inner{display:flex;align-items:center;justify-content:space-between;max-width:760px;margin:0 auto;padding:0 18px;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-mark{width:30px;height:30px;flex:none;}
+  .brand-name{font-family:var(--font-display);font-weight:600;font-size:19px;letter-spacing:0.2px;}
+  .topbar-link{font-size:13px;color:#EAF2EF;text-decoration:none;border:1px solid rgba(255,255,255,0.35);padding:6px 12px;border-radius:999px;transition:background .15s;}
+  .topbar-link:hover{background:rgba(255,255,255,0.12);}
+
+  .hero{padding:34px 0 10px;text-align:center;}
+  .hero h1{font-size:28px;line-height:1.25;font-weight:600;}
+  .hero p{color:var(--color-text-muted);font-size:15.5px;margin:10px 0 0;line-height:1.5;}
+
+  .card{background:var(--color-surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-soft);padding:22px;margin:20px 0;border:1px solid var(--color-border);}
+
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-weight:600;font-size:14px;margin-bottom:8px;color:var(--color-primary-dark);}
+  .field .hint{font-weight:400;color:var(--color-text-muted);font-size:12.5px;}
+  .field input[type=text], .field input[type=tel], .field input[type=email], .field select, .field textarea{
+    width:100%;padding:12px 14px;border:1.5px solid var(--color-border);border-radius:10px;
+    background:#FBFCFB;color:var(--color-text);transition:border-color .15s, box-shadow .15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none;border-color:var(--color-primary-light);box-shadow:0 0 0 3px rgba(58,113,110,0.15);}
+  .field textarea{min-height:80px;resize:vertical;}
+
+  .type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .type-option{border:1.5px solid var(--color-border);background:#FBFCFB;border-radius:12px;padding:14px 6px;text-align:center;font-size:12.5px;font-weight:600;color:var(--color-text-muted);transition:all .15s;}
+  .type-option .emoji{font-size:24px;display:block;margin-bottom:6px;}
+  .type-option.selected{border-color:var(--color-primary);background:var(--color-surface-soft);color:var(--color-primary-dark);box-shadow:0 0 0 2px rgba(32,78,76,0.12) inset;}
+
+  .wait-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+  @media(min-width:480px){.wait-grid{grid-template-columns:repeat(3,1fr);}}
+  .wait-option{border:1.5px solid var(--color-border);background:#FBFCFB;border-radius:10px;padding:10px 6px;text-align:center;font-size:13px;font-weight:600;color:var(--color-text-muted);}
+  .wait-option.selected{border-color:var(--color-secondary);background:#EAF4EF;color:var(--color-primary-dark);}
+
+  .stars{display:flex;gap:6px;}
+  .star{font-size:30px;color:#D8DFDB;transition:color .1s;user-select:none;}
+  .star.filled{color:var(--color-accent);}
+
+  details.optional{border:1.5px dashed var(--color-border);border-radius:12px;padding:12px 14px;}
+  details.optional summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--color-primary-light);}
+  details.optional .field{margin-top:14px;}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:999px;padding:14px 22px;font-weight:700;font-size:15.5px;transition:transform .1s, box-shadow .15s, background .15s;}
+  .btn:active{transform:scale(0.98);}
+  .btn:disabled{opacity:0.6;cursor:not-allowed;}
+  .btn-primary{background:var(--color-accent);color:#fff;box-shadow:0 6px 16px rgba(217,140,74,0.35);}
+  .btn-primary:hover{background:var(--color-accent-dark);}
+  .btn-block{width:100%;}
+  .btn-ghost{background:transparent;color:var(--color-primary);border:1.5px solid var(--color-border);}
+  .btn-ghost:hover{border-color:var(--color-primary-light);}
+  .btn-small{padding:8px 14px;font-size:13px;border-radius:8px;}
+  .btn-danger{background:#FBECE7;color:var(--color-danger);}
+  .btn-danger:hover{background:#F6DCD3;}
+
+  .trust-note{display:flex;align-items:flex-start;gap:10px;background:var(--color-surface-soft);border-radius:12px;padding:12px 14px;font-size:12.5px;color:var(--color-text-muted);margin-top:16px;}
+
+  .confirm{text-align:center;padding:30px 10px;}
+  .confirm h2{font-size:22px;margin:14px 0 6px;}
+  .confirm p{color:var(--color-text-muted);font-size:14.5px;}
+
+  .site-footer{text-align:center;padding:30px 18px 40px;color:var(--color-text-muted);font-size:12px;}
+  .site-footer a{color:var(--color-primary-light);text-decoration:none;}
+
+  .login-wrap{max-width:380px;margin:60px auto;padding:0 18px;}
+
+  .admin-shell{max-width:1080px;margin:0 auto;padding:0 18px 60px;}
+  .admin-tabs{display:flex;gap:4px;overflow-x:auto;margin:18px 0;border-bottom:1.5px solid var(--color-border);}
+  .admin-tab{padding:10px 16px;font-size:13.5px;font-weight:600;color:var(--color-text-muted);border-bottom:2.5px solid transparent;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;}
+  .admin-tab.active{color:var(--color-primary-dark);border-bottom-color:var(--color-accent);}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  @media(min-width:640px){.stat-grid{grid-template-columns:repeat(4,1fr);}}
+  .stat-card{background:var(--color-surface);border-radius:var(--radius-md);padding:16px;border:1px solid var(--color-border);box-shadow:var(--shadow-soft);}
+  .stat-card .num{font-family:var(--font-mono);font-size:26px;font-weight:500;color:var(--color-primary-dark);}
+  .stat-card .lbl{font-size:12px;color:var(--color-text-muted);margin-top:4px;}
+
+  .table-wrap{overflow-x:auto;background:var(--color-surface);border-radius:var(--radius-md);border:1px solid var(--color-border);}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:820px;}
+  th{text-align:left;background:var(--color-surface-soft);color:var(--color-primary-dark);padding:10px 12px;font-size:11.5px;text-transform:uppercase;letter-spacing:0.4px;position:sticky;top:0;}
+  td{padding:10px 12px;border-top:1px solid var(--color-border);vertical-align:top;}
+  tr:hover td{background:#FAFCFB;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;}
+  .badge-dup{background:#FBECE7;color:var(--color-danger);}
+  .badge-note{background:var(--color-surface-soft);color:var(--color-primary-dark);font-family:var(--font-mono);}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;align-items:center;}
+  .toolbar input, .toolbar select{padding:9px 12px;border:1.5px solid var(--color-border);border-radius:8px;background:#fff;font-size:13.5px;}
+
+  .inline-edit-input{width:100%;padding:5px 7px;border:1.5px solid var(--color-border);border-radius:6px;font-size:12.5px;}
+
+  .bar-row{display:grid;grid-template-columns:120px 1fr 40px;align-items:center;gap:10px;margin-bottom:10px;font-size:12.5px;}
+  .bar-track{background:var(--color-surface-soft);border-radius:6px;height:14px;overflow:hidden;}
+  .bar-fill{background:var(--color-secondary);height:100%;border-radius:6px;}
+  .bar-fill.accent{background:var(--color-accent);}
+  .bar-val{font-family:var(--font-mono);color:var(--color-text-muted);text-align:right;}
+
+  .empty-state{text-align:center;padding:40px 20px;color:var(--color-text-muted);}
+  .empty-state .emoji{font-size:38px;display:block;margin-bottom:10px;}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--color-primary-dark);color:#fff;padding:12px 20px;border-radius:999px;font-size:13.5px;box-shadow:var(--shadow-med);z-index:999;opacity:0;transition:opacity .2s, transform .2s;pointer-events:none;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+
+  .admin-account-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--color-border);}
+  .admin-account-row:last-child{border-bottom:none;}
+  .role-pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--color-surface-soft);color:var(--color-primary-dark);}
+  .role-pill.owner{background:#FBECE7;color:var(--color-accent-dark);}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:560px){.grid-2{grid-template-columns:1fr;}}
+
+  .section-title{font-size:16px;margin-bottom:14px;}
+  .section-sub{color:var(--color-text-muted);font-size:13px;margin:-8px 0 16px;}
+</style>
+</head>
+<body>
+
+<!-- ===================== CONFIG BANNER (visible tant que Supabase n'est pas connecté) ===================== -->
+<div class="config-banner hidden" id="config-banner">
+  ⚠️ Base de données non configurée. Ouvrez ce fichier dans un éditeur de texte, remplacez <code>SUPABASE_URL</code> et <code>SUPABASE_ANON_KEY</code> en haut du fichier, puis rechargez la page.
+</div>
+
+<!-- ===================== TOP BAR ===================== -->
+<div class="topbar" id="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="15" cy="15" r="14" stroke="#EAF2EF" stroke-width="1.5" opacity="0.5"/>
+        <path d="M5 15 L10 15 L12.5 8 L16 22 L18.5 15 L25 15" stroke="#EAF2EF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="brand-name">Entraide Santé</span>
+    </div>
+    <a href="#" class="topbar-link" id="topbar-action" onclick="return false;">Espace admin</a>
+  </div>
+</div>
+
+<!-- ===================== PUBLIC VIEW ===================== -->
+<div id="view-public">
+  <div class="container">
+    <div class="hero">
+      <svg class="pulse-line" viewBox="0 0 220 34" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 17 L60 17 L72 5 L86 29 L100 17 L218 17"/>
+      </svg>
+      <h1>Partagez, aidez, guérissez ensemble.</h1>
+      <p>Une information utile sur un service de santé peut faire gagner un temps précieux à quelqu'un d'autre. Prenez 30 secondes pour la partager.</p>
+    </div>
+
+    <form class="card" id="contrib-form" novalidate>
+      <div class="field">
+        <label>Type de lieu / professionnel <span class="hint">— obligatoire</span></label>
+        <div class="type-grid" id="type-grid">
+          <div class="type-option" data-value="Clinique"><span class="emoji">🏥</span>Clinique</div>
+          <div class="type-option" data-value="Cabinet médical"><span class="emoji">🩺</span>Cabinet médical</div>
+          <div class="type-option" data-value="Pharmacie"><span class="emoji">💊</span>Pharmacie</div>
+          <div class="type-option" data-value="Laboratoire"><span class="emoji">🧪</span>Laboratoire</div>
+          <div class="type-option" data-value="Médecin"><span class="emoji">👨‍⚕️</span>Médecin</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-nom">Nom du lieu / professionnel <span class="hint">— obligatoire</span></label>
+        <input type="text" id="f-nom" placeholder="Ex : Clinique Saint-Michel" required>
+      </div>
+
+      <div class="field">
+        <label for="f-service">Service concerné</label>
+        <input type="text" id="f-service" list="service-suggestions" placeholder="Ex : Pédiatrie, Urgence, Maternité...">
+        <datalist id="service-suggestions">
+          <option value="Pédiatrie"><option value="Maternité"><option value="Urgence">
+          <option value="Consultation générale"><option value="Dentaire"><option value="Ophtalmologie">
+          <option value="Gynécologie"><option value="Vaccination">
+        </datalist>
+      </div>
+
+      <div class="field">
+        <label for="f-ville">Ville / quartier <span class="hint">— obligatoire</span></label>
+        <input type="text" id="f-ville" placeholder="Ex : Antsiranana, Sabotsy" required>
+      </div>
+
+      <div class="field">
+        <label>Contact <span class="hint">— au moins un moyen conseillé</span></label>
+        <input type="tel" id="f-tel" placeholder="Téléphone" style="margin-bottom:8px;">
+        <input type="text" id="f-whatsapp" placeholder="WhatsApp" style="margin-bottom:8px;">
+        <input type="text" id="f-facebook" placeholder="Page Facebook (optionnel)">
+      </div>
+
+      <div class="field">
+        <label>Temps d'attente estimé</label>
+        <div class="wait-grid" id="wait-grid">
+          <div class="wait-option" data-value="< 15 min">&lt; 15 min</div>
+          <div class="wait-option" data-value="15-30 min">15-30 min</div>
+          <div class="wait-option" data-value="30-60 min">30-60 min</div>
+          <div class="wait-option" data-value="> 1h">&gt; 1h</div>
+          <div class="wait-option" data-value="Je ne sais pas">Je ne sais pas</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Note de satisfaction</label>
+        <div class="stars" id="stars">
+          <span class="star" data-v="1">★</span><span class="star" data-v="2">★</span>
+          <span class="star" data-v="3">★</span><span class="star" data-v="4">★</span><span class="star" data-v="5">★</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-comment">Commentaire libre</label>
+        <textarea id="f-comment" placeholder="Un détail utile pour aider les autres..."></textarea>
+      </div>
+
+      <details class="optional">
+        <summary>Vos informations (optionnel)</summary>
+        <div class="field">
+          <label for="f-contrib-nom">Nom ou pseudo</label>
+          <input type="text" id="f-contrib-nom" placeholder="Ex : Sonia_A">
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="f-contrib-email">Email</label>
+          <input type="email" id="f-contrib-email" placeholder="vous@exemple.com">
+        </div>
+      </details>
+
+      <div style="margin-top:20px;">
+        <button type="submit" class="btn btn-primary btn-block">Partager cette information</button>
+      </div>
+
+      <div class="trust-note">
+        <span>🤝</span>
+        <span>Vos informations aident une communauté à mieux s'orienter vers les soins. Elles sont partagées publiquement dans un seul but : aider quelqu'un d'autre aujourd'hui.</span>
+      </div>
+    </form>
+  </div>
+
+  <div class="site-footer">
+    Entraide Santé — un outil communautaire, gratuit et ouvert à tous. <br>
+    <a href="#" onclick="showAdminLogin();return false;">Accès administrateur</a>
+  </div>
+</div>
+
+<!-- ===================== CONFIRMATION VIEW ===================== -->
+<div id="view-confirm" class="hidden">
+  <div class="container">
+    <div class="card confirm">
+      <svg class="pulse-line" viewBox="0 0 220 34" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 17 L60 17 L72 5 L86 29 L100 17 L218 17"/>
+      </svg>
+      <h2>Merci pour votre contribution !</h2>
+      <p>Grâce à vous, quelqu'un trouvera plus facilement le service de santé dont il a besoin.</p>
+      <div style="margin-top:22px;">
+        <button class="btn btn-primary" onclick="resetPublicForm()">Ajouter une autre contribution</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ADMIN LOGIN ===================== -->
+<div id="view-login" class="hidden">
+  <div class="login-wrap">
+    <div class="card">
+      <h2 class="section-title">Connexion administrateur</h2>
+      <p class="section-sub">Réservé aux personnes autorisées.</p>
+      <form id="login-form">
+        <div class="field">
+          <label for="login-user">Identifiant</label>
+          <input type="text" id="login-user" required>
+        </div>
+        <div class="field" style="margin-bottom:8px;">
+          <label for="login-pass">Mot de passe</label>
+          <input type="text" id="login-pass" required>
+        </div>
+        <div id="login-error" class="hidden" style="color:var(--color-danger);font-size:13px;margin-bottom:14px;">Identifiant ou mot de passe incorrect.</div>
+        <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
+      </form>
+      <div style="text-align:center;margin-top:16px;">
+        <a href="#" onclick="showPublic();return false;" style="font-size:13px;color:var(--color-text-muted);">← Retour au formulaire public</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ADMIN DASHBOARD ===================== -->
+<div id="view-admin" class="hidden">
+  <div class="admin-shell">
+    <div class="admin-tabs">
+      <button class="admin-tab" data-tab="dashboard">Tableau de bord</button>
+      <button class="admin-tab" data-tab="contributions">Contributions</button>
+      <button class="admin-tab" data-tab="analyse">Analyse</button>
+      <button class="admin-tab" data-tab="export">Export</button>
+      <button class="admin-tab" data-tab="comptes" id="tab-comptes">Comptes admin</button>
+    </div>
+    <div id="admin-content"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   CONFIGURATION — À REMPLIR
+   1. Créez un compte gratuit sur https://supabase.com
+   2. Créez un nouveau projet
+   3. Dans "SQL Editor", exécutez le script fourni dans les
+      instructions pour créer les tables
+   4. Dans "Project Settings > API", copiez :
+      - Project URL          -> SUPABASE_URL
+      - anon public API key  -> SUPABASE_ANON_KEY
+========================================================= */
+const SUPABASE_URL = "https://kddjswpzjkjuhpeyurjc.supabase.co/rest/v1/";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkZGpzd3B6amtqdWhwZXl1cmpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3NjcwNjcsImV4cCI6MjA5OTM0MzA2N30.QiKGdtJHZIU1S5xKTwWvKQF2U45sgQV7ulL6-qX5_Eo";
+
+const CONFIGURED = !SUPABASE_URL.includes("VOTRE_PROJET") && !SUPABASE_ANON_KEY.includes("VOTRE_CLE");
+const supabaseClient = CONFIGURED ? window.supabase.createClient(
+  SUPABASE_URL.startsWith('http') ? SUPABASE_URL : `https://${SUPABASE_URL}`,
+  SUPABASE_ANON_KEY
+) : null;
+
+/* =========================================================
+   DATA LAYER (Supabase)
+========================================================= */
+function dbRowFromContribution(c){
+  return {
+    id: c.id, lieu_type: c.lieuType, nom_lieu: c.nomLieu, service: c.service, ville: c.ville,
+    telephone: c.telephone, whatsapp: c.whatsapp, facebook: c.facebook, temps_attente: c.tempsAttente,
+    note: c.note, commentaire: c.commentaire, contributeur_nom: c.contributeurNom,
+    contributeur_email: c.contributeurEmail, date_creation: c.dateCreation
+  };
+}
+function contributionFromDbRow(r){
+  return {
+    id: r.id, lieuType: r.lieu_type, nomLieu: r.nom_lieu, service: r.service, ville: r.ville,
+    telephone: r.telephone, whatsapp: r.whatsapp, facebook: r.facebook, tempsAttente: r.temps_attente,
+    note: r.note, commentaire: r.commentaire, contributeurNom: r.contributeur_nom,
+    contributeurEmail: r.contributeur_email, dateCreation: r.date_creation
+  };
+}
+
+async function getAllContributions(){
+  if(!CONFIGURED) return [];
+  const { data, error } = await supabaseClient.from('contributions').select('*').order('date_creation', { ascending:false });
+  if(error){ console.error(error); showToast('Erreur de connexion à la base de données.'); return []; }
+  return data.map(contributionFromDbRow);
+}
+async function insertContribution(c){
+  if(!CONFIGURED) return false;
+  const { error } = await supabaseClient.from('contributions').insert(dbRowFromContribution(c));
+  if(error) console.error(error);
+  return !error;
+}
+async function updateContributionDb(c){
+  if(!CONFIGURED) return false;
+  const { error } = await supabaseClient.from('contributions').update(dbRowFromContribution(c)).eq('id', c.id);
+  if(error) console.error(error);
+  return !error;
+}
+async function deleteContributionById(id){
+  if(!CONFIGURED) return false;
+  const { error } = await supabaseClient.from('contributions').delete().eq('id', id);
+  if(error) console.error(error);
+  return !error;
+}
+
+async function getAdmins(){
+  if(!CONFIGURED) return [];
+  const { data, error } = await supabaseClient.from('admin_accounts').select('*').order('date_creation', { ascending:true });
+  if(error){ console.error(error); return []; }
+  return data;
+}
+async function insertAdmin(admin){
+  if(!CONFIGURED) return false;
+  const { error } = await supabaseClient.from('admin_accounts').insert(admin);
+  if(error) console.error(error);
+  return !error;
+}
+async function removeAdminByUsername(username){
+  if(!CONFIGURED) return false;
+  const { error } = await supabaseClient.from('admin_accounts').delete().eq('username', username);
+  if(error) console.error(error);
+  return !error;
+}
+async function ensureOwnerAccount(){
+  if(!CONFIGURED) return [];
+  let admins = await getAdmins();
+  if(!admins.length){
+    const owner = { username:'Hoag5432', password:'Hoag5432', role:'owner', date_creation:new Date().toISOString(), created_by:null };
+    await insertAdmin(owner);
+    admins = [owner];
+  }
+  return admins;
+}
+
+/* =========================================================
+   APP STATE
+========================================================= */
+let currentAdmin = null;
+let allContribs = [];
+let currentTab = 'dashboard';
+let filters = { search:'', ville:'', type:'', note:'' };
+
+/* =========================================================
+   UI HELPERS
+========================================================= */
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function el(id){ return document.getElementById(id); }
+
+function showPublic(){
+  el('view-public').classList.remove('hidden');
+  el('view-confirm').classList.add('hidden');
+  el('view-login').classList.add('hidden');
+  el('view-admin').classList.add('hidden');
+  el('topbar-action').textContent = 'Espace admin';
+  el('topbar-action').onclick = (e)=>{e.preventDefault(); showAdminLogin();};
+}
+function showAdminLogin(){
+  el('view-public').classList.add('hidden');
+  el('view-confirm').classList.add('hidden');
+  el('view-login').classList.remove('hidden');
+  el('view-admin').classList.add('hidden');
+}
+async function showAdminDashboard(){
+  el('view-public').classList.add('hidden');
+  el('view-confirm').classList.add('hidden');
+  el('view-login').classList.add('hidden');
+  el('view-admin').classList.remove('hidden');
+  el('topbar-action').textContent = 'Déconnexion';
+  el('topbar-action').onclick = (e)=>{e.preventDefault(); logout();};
+  el('tab-comptes').style.display = (currentAdmin.role === 'owner') ? '' : 'none';
+  allContribs = await getAllContributions();
+  renderAdminTab();
+}
+function logout(){ currentAdmin = null; showPublic(); }
+
+/* =========================================================
+   PUBLIC FORM LOGIC
+========================================================= */
+let selectedType = null;
+let selectedWait = null;
+let selectedStars = 0;
+
+document.querySelectorAll('.type-option').forEach(opt=>{
+  opt.addEventListener('click', ()=>{
+    document.querySelectorAll('.type-option').forEach(o=>o.classList.remove('selected'));
+    opt.classList.add('selected');
+    selectedType = opt.dataset.value;
+  });
+});
+document.querySelectorAll('.wait-option').forEach(opt=>{
+  opt.addEventListener('click', ()=>{
+    document.querySelectorAll('.wait-option').forEach(o=>o.classList.remove('selected'));
+    opt.classList.add('selected');
+    selectedWait = opt.dataset.value;
+  });
+});
+document.querySelectorAll('#stars .star').forEach(star=>{
+  star.addEventListener('click', ()=>{
+    selectedStars = parseInt(star.dataset.v, 10);
+    renderStars();
+  });
+});
+function renderStars(){
+  document.querySelectorAll('#stars .star').forEach(s=>{
+    s.classList.toggle('filled', parseInt(s.dataset.v,10) <= selectedStars);
+  });
+}
+
+function resetPublicForm(){
+  el('contrib-form').reset();
+  selectedType = null; selectedWait = null; selectedStars = 0;
+  document.querySelectorAll('.type-option').forEach(o=>o.classList.remove('selected'));
+  document.querySelectorAll('.wait-option').forEach(o=>o.classList.remove('selected'));
+  renderStars();
+  showPublic();
+}
+
+el('contrib-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  if(!CONFIGURED){ showToast('La base de données n\'est pas encore configurée.'); return; }
+  const nom = el('f-nom').value.trim();
+  const ville = el('f-ville').value.trim();
+  if(!selectedType){ showToast('Merci de choisir un type de lieu.'); return; }
+  if(!nom){ showToast('Merci d\'indiquer le nom du lieu.'); el('f-nom').focus(); return; }
+  if(!ville){ showToast('Merci d\'indiquer la ville ou le quartier.'); el('f-ville').focus(); return; }
+
+  const submitBtn = e.target.querySelector('button[type=submit]');
+  submitBtn.disabled = true; submitBtn.textContent = 'Envoi...';
+
+  const contribution = {
+    id: 'c'+Date.now()+Math.random().toString(36).slice(2,7),
+    lieuType: selectedType, nomLieu: nom, service: el('f-service').value.trim(), ville: ville,
+    telephone: el('f-tel').value.trim(), whatsapp: el('f-whatsapp').value.trim(), facebook: el('f-facebook').value.trim(),
+    tempsAttente: selectedWait || '', note: selectedStars || 0, commentaire: el('f-comment').value.trim(),
+    contributeurNom: el('f-contrib-nom').value.trim(), contributeurEmail: el('f-contrib-email').value.trim(),
+    dateCreation: new Date().toISOString()
+  };
+
+  const ok = await insertContribution(contribution);
+  if(ok){
+    el('view-public').classList.add('hidden');
+    el('view-confirm').classList.remove('hidden');
+  }else{
+    showToast('Une erreur est survenue, merci de réessayer.');
+  }
+  submitBtn.disabled = false; submitBtn.textContent = 'Partager cette information';
+});
+
+/* =========================================================
+   LOGIN LOGIC
+========================================================= */
+el('login-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  if(!CONFIGURED){ el('login-error').textContent = "Base de données non configurée."; el('login-error').classList.remove('hidden'); return; }
+  const u = el('login-user').value.trim();
+  const p = el('login-pass').value;
+  const admins = await ensureOwnerAccount();
+  const match = admins.find(a=> a.username === u && a.password === p);
+  el('login-error').classList.add('hidden');
+  if(match){
+    currentAdmin = { username: match.username, role: match.role };
+    el('login-form').reset();
+    showAdminDashboard();
+  }else{
+    el('login-error').textContent = 'Identifiant ou mot de passe incorrect.';
+    el('login-error').classList.remove('hidden');
+  }
+});
+
+/* =========================================================
+   ADMIN TABS
+========================================================= */
+document.querySelectorAll('.admin-tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{ currentTab = tab.dataset.tab; renderAdminTab(); });
+});
+function setActiveTabUI(){
+  document.querySelectorAll('.admin-tab').forEach(t=> t.classList.toggle('active', t.dataset.tab === currentTab));
+}
+function renderAdminTab(){
+  setActiveTabUI();
+  const c = el('admin-content');
+  if(currentTab === 'dashboard') return renderDashboard(c);
+  if(currentTab === 'contributions') return renderContributions(c);
+  if(currentTab === 'analyse') return renderAnalyse(c);
+  if(currentTab === 'export') return renderExport(c);
+  if(currentTab === 'comptes') return renderComptes(c);
+}
+
+/* ---------- DASHBOARD ---------- */
+function renderDashboard(container){
+  const total = allContribs.length;
+  const weekAgo = Date.now() - 7*24*60*60*1000;
+  const recentCount = allContribs.filter(c=> new Date(c.dateCreation).getTime() >= weekAgo).length;
+  const notes = allContribs.filter(c=>c.note>0).map(c=>c.note);
+  const avgNote = notes.length ? (notes.reduce((a,b)=>a+b,0)/notes.length).toFixed(1) : '—';
+  const villes = new Set(allContribs.map(c=>(c.ville||'').toLowerCase().trim()).filter(Boolean));
+  const recent = allContribs.slice(0,6);
+
+  container.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num">${total}</div><div class="lbl">Contributions totales</div></div>
+      <div class="stat-card"><div class="num">${recentCount}</div><div class="lbl">Nouvelles (7 jours)</div></div>
+      <div class="stat-card"><div class="num">${avgNote}</div><div class="lbl">Note moyenne</div></div>
+      <div class="stat-card"><div class="num">${villes.size}</div><div class="lbl">Villes / quartiers couverts</div></div>
+    </div>
+    <h3 class="section-title" style="margin-top:26px;">Dernières contributions</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Lieu</th><th>Type</th><th>Ville</th><th>Note</th></tr></thead>
+        <tbody>
+          ${recent.length ? recent.map(c=>`
+            <tr>
+              <td>${formatDate(c.dateCreation)}</td>
+              <td>${escapeHtml(c.nomLieu)}</td>
+              <td>${escapeHtml(c.lieuType)}</td>
+              <td>${escapeHtml(c.ville)}</td>
+              <td>${c.note ? '★'.repeat(c.note) : '—'}</td>
+            </tr>`).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--color-text-muted);padding:24px;">Aucune contribution pour le moment.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+/* ---------- CONTRIBUTIONS (gestion) ---------- */
+function findDuplicateIds(){
+  const groups = {};
+  allContribs.forEach(c=>{
+    const key = (c.nomLieu||'').toLowerCase().trim()+'|'+(c.ville||'').toLowerCase().trim();
+    if(!groups[key]) groups[key]=[];
+    groups[key].push(c.id);
+  });
+  const dupIds = new Set();
+  Object.values(groups).forEach(ids=>{ if(ids.length>1) ids.forEach(id=>dupIds.add(id)); });
+  return dupIds;
+}
+function getFilteredContribs(){
+  const dupIds = findDuplicateIds();
+  return allContribs.filter(c=>{
+    if(filters.search){
+      const s = filters.search.toLowerCase();
+      const hay = [c.nomLieu,c.service,c.ville,c.commentaire].join(' ').toLowerCase();
+      if(!hay.includes(s)) return false;
+    }
+    if(filters.ville && (c.ville||'').toLowerCase() !== filters.ville.toLowerCase()) return false;
+    if(filters.type && c.lieuType !== filters.type) return false;
+    if(filters.note && c.note < parseInt(filters.note,10)) return false;
+    return true;
+  }).map(c=>({...c, _dup: dupIds.has(c.id)}));
+}
+function renderContributions(container){
+  const villesOptions = [...new Set(allContribs.map(c=>c.ville).filter(Boolean))].sort();
+  const typesOptions = ['Clinique','Cabinet médical','Pharmacie','Laboratoire','Médecin'];
+  const rows = getFilteredContribs();
+
+  container.innerHTML = `
+    <div class="toolbar">
+      <input type="text" id="filter-search" placeholder="Rechercher..." value="${escapeHtml(filters.search)}">
+      <select id="filter-ville"><option value="">Toutes les villes</option>${villesOptions.map(v=>`<option ${filters.ville===v?'selected':''}>${escapeHtml(v)}</option>`).join('')}</select>
+      <select id="filter-type"><option value="">Tous les types</option>${typesOptions.map(t=>`<option ${filters.type===t?'selected':''}>${t}</option>`).join('')}</select>
+      <select id="filter-note">
+        <option value="">Toutes les notes</option>
+        <option value="4" ${filters.note==='4'?'selected':''}>4★ et plus</option>
+        <option value="3" ${filters.note==='3'?'selected':''}>3★ et plus</option>
+        <option value="1" ${filters.note==='1'?'selected':''}>1★ et plus</option>
+      </select>
+      <span style="font-size:12.5px;color:var(--color-text-muted);margin-left:auto;">${rows.length} résultat(s)</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Type</th><th>Lieu</th><th>Service</th><th>Ville</th><th>Contact</th><th>Attente</th><th>Note</th><th>Commentaire</th><th></th>
+        </tr></thead>
+        <tbody id="contrib-tbody">
+          ${rows.length ? rows.map(rowHtml).join('') : `<tr><td colspan="10" style="text-align:center;color:var(--color-text-muted);padding:30px;">Aucun résultat.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  el('filter-search').addEventListener('input', e=>{ filters.search = e.target.value; renderContributions(container); });
+  el('filter-ville').addEventListener('change', e=>{ filters.ville = e.target.value; renderContributions(container); });
+  el('filter-type').addEventListener('change', e=>{ filters.type = e.target.value; renderContributions(container); });
+  el('filter-note').addEventListener('change', e=>{ filters.note = e.target.value; renderContributions(container); });
+
+  document.querySelectorAll('[data-action=edit]').forEach(b=> b.addEventListener('click', ()=> startEdit(b.dataset.id, container)));
+  document.querySelectorAll('[data-action=delete]').forEach(b=> b.addEventListener('click', ()=> confirmDelete(b.dataset.id, container)));
+  document.querySelectorAll('[data-action=save]').forEach(b=> b.addEventListener('click', ()=> saveEdit(b.dataset.id, container)));
+  document.querySelectorAll('[data-action=cancel]').forEach(b=> b.addEventListener('click', ()=> { editingId=null; renderContributions(container); }));
+}
+
+let editingId = null;
+function rowHtml(c){
+  const isEditing = editingId === c.id;
+  const contact = [c.telephone, c.whatsapp].filter(Boolean).join(' / ') || '—';
+  if(!isEditing){
+    return `<tr>
+      <td>${formatDate(c.dateCreation)}</td>
+      <td>${escapeHtml(c.lieuType)}</td>
+      <td>${escapeHtml(c.nomLieu)} ${c._dup?'<span class="badge badge-dup">doublon possible</span>':''}</td>
+      <td>${escapeHtml(c.service||'—')}</td>
+      <td>${escapeHtml(c.ville)}</td>
+      <td>${escapeHtml(contact)}</td>
+      <td>${escapeHtml(c.tempsAttente||'—')}</td>
+      <td><span class="badge badge-note">${c.note?c.note+'★':'—'}</span></td>
+      <td style="max-width:200px;">${escapeHtml(c.commentaire||'—')}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-ghost btn-small" data-action="edit" data-id="${c.id}">Modifier</button>
+        <button class="btn btn-danger btn-small" data-action="delete" data-id="${c.id}">Suppr.</button>
+      </td>
+    </tr>`;
+  }
+  return `<tr>
+    <td>${formatDate(c.dateCreation)}</td>
+    <td><input class="inline-edit-input" id="e-type-${c.id}" value="${escapeHtml(c.lieuType)}"></td>
+    <td><input class="inline-edit-input" id="e-nom-${c.id}" value="${escapeHtml(c.nomLieu)}"></td>
+    <td><input class="inline-edit-input" id="e-service-${c.id}" value="${escapeHtml(c.service||'')}"></td>
+    <td><input class="inline-edit-input" id="e-ville-${c.id}" value="${escapeHtml(c.ville)}"></td>
+    <td><input class="inline-edit-input" id="e-tel-${c.id}" value="${escapeHtml(c.telephone||'')}"></td>
+    <td><input class="inline-edit-input" id="e-wait-${c.id}" value="${escapeHtml(c.tempsAttente||'')}"></td>
+    <td><input class="inline-edit-input" id="e-note-${c.id}" value="${c.note||0}" style="width:44px;"></td>
+    <td><input class="inline-edit-input" id="e-comment-${c.id}" value="${escapeHtml(c.commentaire||'')}"></td>
+    <td style="white-space:nowrap;">
+      <button class="btn btn-primary btn-small" data-action="save" data-id="${c.id}">OK</button>
+      <button class="btn btn-ghost btn-small" data-action="cancel" data-id="${c.id}">Annuler</button>
+    </td>
+  </tr>`;
+}
+function startEdit(id, container){ editingId = id; renderContributions(container); }
+async function saveEdit(id, container){
+  const c = allContribs.find(x=>x.id===id);
+  if(!c) return;
+  c.lieuType = el('e-type-'+id).value.trim();
+  c.nomLieu = el('e-nom-'+id).value.trim();
+  c.service = el('e-service-'+id).value.trim();
+  c.ville = el('e-ville-'+id).value.trim();
+  c.telephone = el('e-tel-'+id).value.trim();
+  c.tempsAttente = el('e-wait-'+id).value.trim();
+  c.note = Math.max(0, Math.min(5, parseInt(el('e-note-'+id).value,10) || 0));
+  c.commentaire = el('e-comment-'+id).value.trim();
+  const ok = await updateContributionDb(c);
+  editingId = null;
+  showToast(ok ? 'Contribution mise à jour.' : 'Erreur lors de la mise à jour.');
+  renderContributions(container);
+}
+async function confirmDelete(id, container){
+  if(!confirm('Supprimer définitivement cette contribution ?')) return;
+  const ok = await deleteContributionById(id);
+  if(ok) allContribs = allContribs.filter(c=>c.id!==id);
+  showToast(ok ? 'Contribution supprimée.' : 'Erreur lors de la suppression.');
+  renderContributions(container);
+}
+
+/* ---------- ANALYSE ---------- */
+function renderAnalyse(container){
+  if(!allContribs.length){ container.innerHTML = emptyState('Pas encore de données à analyser.'); return; }
+  const byVille = countBy(allContribs, c=>c.ville);
+  const byType = countBy(allContribs, c=>c.lieuType);
+  const notes = allContribs.filter(c=>c.note>0).map(c=>c.note);
+  const avgNote = notes.length ? (notes.reduce((a,b)=>a+b,0)/notes.length).toFixed(2) : '—';
+  const byMonth = {};
+  allContribs.forEach(c=>{
+    const d = new Date(c.dateCreation);
+    const key = d.toLocaleDateString('fr-FR', {month:'short', year:'2-digit'});
+    byMonth[key] = (byMonth[key]||0)+1;
+  });
+
+  container.innerHTML = `
+    <div class="grid-2">
+      <div class="card"><h3 class="section-title">Contributions par ville</h3>${barChart(byVille, 8)}</div>
+      <div class="card"><h3 class="section-title">Contributions par type de lieu</h3>${barChart(byType, 8, true)}</div>
+    </div>
+    <div class="grid-2" style="margin-top:14px;">
+      <div class="card"><h3 class="section-title">Évolution mensuelle</h3>${barChart(byMonth, 8)}</div>
+      <div class="card">
+        <h3 class="section-title">Satisfaction globale</h3>
+        <div style="text-align:center;padding:20px 0;">
+          <div style="font-family:var(--font-mono);font-size:40px;color:var(--color-primary-dark);">${avgNote}<span style="font-size:20px;color:var(--color-text-muted);"> / 5</span></div>
+          <div style="color:var(--color-text-muted);font-size:12.5px;margin-top:6px;">basé sur ${notes.length} avis notés</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+function countBy(arr, fn){
+  const out = {};
+  arr.forEach(item=>{
+    const k = (fn(item)||'Non précisé').trim() || 'Non précisé';
+    out[k] = (out[k]||0)+1;
+  });
+  return out;
+}
+function barChart(dataObj, limit, accent){
+  const entries = Object.entries(dataObj).sort((a,b)=>b[1]-a[1]).slice(0, limit);
+  if(!entries.length) return `<p style="color:var(--color-text-muted);font-size:13px;">Aucune donnée.</p>`;
+  const max = Math.max(...entries.map(e=>e[1]));
+  return entries.map(([label,val])=>`
+    <div class="bar-row">
+      <div>${escapeHtml(label)}</div>
+      <div class="bar-track"><div class="bar-fill ${accent?'accent':''}" style="width:${Math.max(6,(val/max)*100)}%;"></div></div>
+      <div class="bar-val">${val}</div>
+    </div>
+  `).join('');
+}
+function emptyState(msg){ return `<div class="empty-state"><span class="emoji">🌱</span>${msg}</div>`; }
+
+/* ---------- EXPORT ---------- */
+function renderExport(container){
+  container.innerHTML = `
+    <div class="card">
+      <h3 class="section-title">Exporter les données</h3>
+      <p class="section-sub">L'export inclut les contributions actuellement filtrées dans l'onglet "Contributions" (${getFilteredContribs().length} ligne(s)). Videz les filtres pour exporter toutes les données.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="export-csv">Exporter en CSV</button>
+        <button class="btn btn-ghost" id="export-xlsx">Exporter en Excel (.xlsx)</button>
+      </div>
+    </div>
+  `;
+  el('export-csv').addEventListener('click', exportCsv);
+  el('export-xlsx').addEventListener('click', exportXlsx);
+}
+function exportRows(){
+  return getFilteredContribs().map(c=>({
+    'Date': formatDate(c.dateCreation), 'Type': c.lieuType, 'Nom du lieu': c.nomLieu, 'Service': c.service,
+    'Ville / quartier': c.ville, 'Téléphone': c.telephone, 'WhatsApp': c.whatsapp, 'Facebook': c.facebook,
+    "Temps d'attente": c.tempsAttente, 'Note': c.note, 'Commentaire': c.commentaire,
+    'Contributeur': c.contributeurNom, 'Email contributeur': c.contributeurEmail
+  }));
+}
+function exportCsv(){
+  const rows = exportRows();
+  if(!rows.length){ showToast('Aucune donnée à exporter.'); return; }
+  const headers = Object.keys(rows[0]);
+  const csv = [headers.join(',')].concat(rows.map(r=> headers.map(h=> csvEscape(r[h])).join(','))).join('\n');
+  downloadBlob(new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'}), 'entraide-sante-export.csv');
+  showToast('Export CSV téléchargé.');
+}
+function csvEscape(val){
+  const s = (val===undefined||val===null)?'':String(val);
+  if(/[",\n]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
+  return s;
+}
+function exportXlsx(){
+  const rows = exportRows();
+  if(!rows.length){ showToast('Aucune donnée à exporter.'); return; }
+  if(typeof XLSX === 'undefined'){ showToast("La bibliothèque d'export Excel n'a pas pu se charger."); return; }
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Contributions');
+  XLSX.writeFile(wb, 'entraide-sante-export.xlsx');
+  showToast('Export Excel téléchargé.');
+}
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ---------- COMPTES ADMIN (owner only) ---------- */
+async function renderComptes(container){
+  if(currentAdmin.role !== 'owner'){ container.innerHTML = emptyState("Seul le compte propriétaire peut gérer les accès."); return; }
+  const admins = await getAdmins();
+  container.innerHTML = `
+    <div class="card">
+      <h3 class="section-title">Comptes autorisés</h3>
+      <p class="section-sub">Seul vous pouvez créer un nouvel accès administrateur. Personne ne peut s'inscrire seul.</p>
+      <div id="admin-list">
+        ${admins.map(a=>`
+          <div class="admin-account-row">
+            <div><strong>${escapeHtml(a.username)}</strong><span class="role-pill ${a.role==='owner'?'owner':''}" style="margin-left:8px;">${a.role==='owner'?'Propriétaire':'Admin'}</span></div>
+            ${a.role!=='owner' ? `<button class="btn btn-danger btn-small" data-action="remove-admin" data-username="${escapeHtml(a.username)}">Retirer</button>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <h3 class="section-title">Autoriser un nouvel administrateur</h3>
+      <form id="new-admin-form">
+        <div class="field"><label for="na-user">Identifiant</label><input type="text" id="na-user" required></div>
+        <div class="field"><label for="na-pass">Mot de passe</label><input type="text" id="na-pass" required></div>
+        <button type="submit" class="btn btn-primary">Ajouter cet administrateur</button>
+      </form>
+    </div>
+  `;
+  document.querySelectorAll('[data-action=remove-admin]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      if(!confirm(`Retirer l'accès de ${b.dataset.username} ?`)) return;
+      const ok = await removeAdminByUsername(b.dataset.username);
+      showToast(ok ? 'Accès retiré.' : 'Erreur.');
+      renderComptes(container);
+    });
+  });
+  el('new-admin-form').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const u = el('na-user').value.trim();
+    const p = el('na-pass').value;
+    if(!u || !p) return;
+    const existing = await getAdmins();
+    if(existing.some(a=>a.username === u)){ showToast('Cet identifiant existe déjà.'); return; }
+    const ok = await insertAdmin({ username:u, password:p, role:'admin', date_creation:new Date().toISOString(), created_by: currentAdmin.username });
+    showToast(ok ? 'Nouvel administrateur autorisé.' : 'Erreur lors de la création.');
+    renderComptes(container);
+  });
+}
+
+/* =========================================================
+   UTILITIES
+========================================================= */
+function formatDate(iso){
+  try{ return new Date(iso).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+  catch(e){ return iso; }
+}
+function escapeHtml(s){
+  if(s===undefined||s===null) return '';
+  return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* =========================================================
+   INIT
+========================================================= */
+(async function init(){
+  renderStars();
+  if(!CONFIGURED){ el('config-banner').classList.remove('hidden'); }
+  showPublic();
+})();
+</script>
+</body>
+</html>
